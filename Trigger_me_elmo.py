@@ -96,9 +96,8 @@ cap = cv2.VideoCapture(0) #webcam
 t.hideturtle()
 t.bgcolor('black')
 t.setup(width=1.0,height=1.0)
-t.bgpic('elmo2.png')
+t.bgpic('elmo_face/elmo2.png')
 t.update()
-#
 
 asian_directory = glob.glob('Sound/Asian/*.wav')
 black_directory = glob.glob('Sound/Black/*.wav')
@@ -115,11 +114,8 @@ while(True):
 
     for (x,y,w,h) in faces:
         if w > 130: 
-            cv2.rectangle(img,(x,y),(x+w,y+h),(0,255,0),1) #draw rectangle to main image
-            
+            cv2.rectangle(img,(x,y),(x+w,y+h),(0,255,0),1)
             detected_face = img[int(y):int(y+h), int(x):int(x+w)] #crop detected face
-            
-            #add margin
             margin_rate = 30
             try:
                 margin_x = int(w * margin_rate / 100)
@@ -127,16 +123,9 @@ while(True):
                 
                 detected_face = img[int(y-margin_y):int(y+h+margin_y), int(x-margin_x):int(x+w+margin_x)]
                 detected_face = cv2.resize(detected_face, (224, 224)) #resize to 224x224
-
-                #display margin added face
-                #cv2.rectangle(img,(x-margin_x,y-margin_y),(x+w+margin_x,y+h+margin_y),(67, 67, 67),1)
-                
             except Exception as err:
-                #print("margin cannot be added (",str(err),")")
                 detected_face = img[int(y):int(y+h), int(x):int(x+w)]
                 detected_face = cv2.resize(detected_face, (224, 224))
-            
-            #print("shape: ",detected_face.shape)
             
             if detected_face.shape[0] > 0 and detected_face.shape[1] > 0 and detected_face.shape[2] >0: #sometimes shape becomes (264, 0, 3)
                 
@@ -148,7 +137,7 @@ while(True):
                 prediction_proba = race_model.predict(img_pixels)
                 prediction = np.argmax(prediction_proba)
                 
-                if False: # activate to dump
+                if True: # activate to dump
                     for i in range(0, len(races)):
                         if np.argmax(prediction_proba) == i:
                             print("* ", end='')
@@ -176,7 +165,7 @@ while(True):
                         elif label == "Hispanic":directory = hispanic_directory
                         else:directory = other
                         speech = random.choice(directory)
-                        if speech == speech_copy and len(directory)!=1:
+                        if speech == speech_copy and len(directory)>=2:
                             continue
                         speech_copy = speech
                         wf = wave.open(speech,'rb')
@@ -190,17 +179,16 @@ while(True):
                             data = wf.readframes(chunk)
                             rms= audioop.rms(data,2)
                             if rms>500:
-                                t.bgpic('elmo.png')
+                                t.bgpic('elmo_face/elmo.png')
                                 t.update()
                             else:
-                                t.bgpic('elmo2.png')
+                                t.bgpic('elmo_face/elmo2.png')
                                 t.update()
     cv2.imshow('img',img)
     
-    if cv2.waitKey(1) & 0xFF == 27: #press q to quit
+    if cv2.waitKey(1) & 0xFF == 27: #press esc to quit
         break
 
-#kill open cv things        
 cap.release()
 cv2.destroyAllWindows()
 t.bye()
