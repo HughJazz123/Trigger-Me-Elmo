@@ -176,7 +176,7 @@ while(True):
                         elif label == "Hispanic":directory = hispanic_directory
                         else:directory = other
                         speech = random.choice(directory)
-                        if speech == speech_copy and len(directory)>=2:
+                        if speech == speech_copy and len(directory)!=1:
                             continue
                         speech_copy = speech
                         wf = wave.open(speech,'rb')
