@@ -7,4 +7,5 @@ install the requirements using terminal via pip:
 `pip install -r requirements.txt`
 
 Race prediction : https://github.com/serengil/tensorflow-101/blob/master/python/real-time-ethnicity-prediction.py
+
 Sound Source : https://github.com/michaelreeves08/elmo-core
