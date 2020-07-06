@@ -128,8 +128,6 @@ while(True):
                 detected_face = cv2.resize(detected_face, (224, 224))
             
             if detected_face.shape[0] > 0 and detected_face.shape[1] > 0 and detected_face.shape[2] >0: #sometimes shape becomes (264, 0, 3)
-                
-                
                 img_pixels = image.img_to_array(detected_face)
                 img_pixels = np.expand_dims(img_pixels, axis = 0)
                 img_pixels /= 255
@@ -137,26 +135,30 @@ while(True):
                 prediction_proba = race_model.predict(img_pixels)
                 prediction = np.argmax(prediction_proba)
                 
-                if True: # activate to dump
-                    for i in range(0, len(races)):
-                        if np.argmax(prediction_proba) == i:
-                            print("* ", end='')
-                        print(races[i], ": ", prediction_proba[0][i])
-                    print("----------------")
-                
                 race = races[prediction]
                 #--------------------------
                 #background
                 overlay = img.copy()
                 color = (255,255,255)
                 proba = round(100*prediction_proba[0, prediction], 2)
+
                 if proba >= 51:
                     label = str(race)
                     if count < 10:
                         count+=1
+
                     elif count == 10:
                         count+=1
                         cv2.putText(img, label, (x+w//2-10,y), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 1)
+                        cv2.rectangle(img,(0,0),(250,135),(64,64,64),cv2.FILLED)
+                        cv2.addWeighted(overlay, 0.4, img, 1 - 0.4, 0, img)
+                        for i in range(0, len(races)):
+                            if np.argmax(prediction_proba) == i:
+                                prediction_string=("* "+races[i]+" : "+str(round(prediction_proba[0][i],10)))
+                            else:
+                                prediction_string= (races[i]+" : "+str(round(prediction_proba[0][i],10)))
+                            cv2.putText(img,prediction_string,(0,i*20+15),cv2.FONT_HERSHEY_SIMPLEX, 0.5,(255,255,255), 1)
+                        
                     else:
                         count = 0
                         if label == "Asian" or label == "Indian":directory = asian_directory
@@ -165,8 +167,8 @@ while(True):
                         elif label == "Hispanic":directory = hispanic_directory
                         else:directory = other
                         speech = random.choice(directory)
-                        if speech == speech_copy and len(directory)>=2:
-                            continue
+                        while speech == speech_copy and len(directory)!=1:
+                            speech = random.choice(directory)
                         speech_copy = speech
                         wf = wave.open(speech,'rb')
                         stream = p.open(format = p.get_format_from_width(wf.getsampwidth()),
