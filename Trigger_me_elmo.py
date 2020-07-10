@@ -1,5 +1,6 @@
 import numpy as np
 import cv2
+import silence_tensorflow.auto
 from keras.models import Model, Sequential
 from keras.layers import Input, Convolution2D, ZeroPadding2D, MaxPooling2D, Flatten, Dense, Dropout, Activation
 from keras.preprocessing.image import load_img, save_img, img_to_array
@@ -85,14 +86,13 @@ race_model = Model(inputs=model.input, outputs=base_model_output)
 race_model.load_weights('weights/race_model_single_batch.h5')
 
 #------------------------
-
 races = ['Asian', 'Indian', 'Black', 'White', 'Middle Eastern', 'Hispanic']
-
 #------------------------
 
 cap = cv2.VideoCapture(0) #webcam
 
 #turtle stuff
+t.title("Trigger Me Elmo")
 t.hideturtle()
 t.bgcolor('black')
 t.setup(width=1.0,height=1.0)
@@ -109,11 +109,11 @@ count = 0
 
 while(True):
     ret, img = cap.read()
-    img = cv2.resize(img, (int(640), int(360)))
+    img = cv2.resize(img, (int(640*0.75), int(360*0.75)))
     faces = face_cascade.detectMultiScale(img, 1.3, 5)
 
     for (x,y,w,h) in faces:
-        if w > 130: 
+        if True: 
             cv2.rectangle(img,(x,y),(x+w,y+h),(0,255,0),1)
             detected_face = img[int(y):int(y+h), int(x):int(x+w)] #crop detected face
             margin_rate = 30
@@ -150,25 +150,24 @@ while(True):
                     elif count == 10:
                         count+=1
                         cv2.putText(img, label, (x+w//2-10,y), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 1)
-                        cv2.rectangle(img,(0,0),(250,135),(64,64,64),cv2.FILLED)
+                        cv2.rectangle(img,(0,0),(180,80),(64,64,64),cv2.FILLED)
                         cv2.addWeighted(overlay, 0.4, img, 1 - 0.4, 0, img)
-                        for i in range(0, len(races)):
+                        for i in range(len(races)):
                             if np.argmax(prediction_proba) == i:
-                                prediction_string=("* "+races[i]+" : "+str(round(prediction_proba[0][i],10)))
+                                prediction_string=("* "+races[i]+" : "+str(round(prediction_proba[0][i],6)))
                             else:
-                                prediction_string= (races[i]+" : "+str(round(prediction_proba[0][i],10)))
-                            cv2.putText(img,prediction_string,(0,i*20+15),cv2.FONT_HERSHEY_SIMPLEX, 0.5,(255,255,255), 1)
+                                prediction_string= (races[i]+" : "+str(round(prediction_proba[0][i],6)))
+                            cv2.putText(img,prediction_string,(0,i*13+10),cv2.FONT_HERSHEY_SIMPLEX, 0.4,(255,255,255), 1)
                         
                     else:
                         count = 0
-                        if label == "Asian" or label == "Indian":directory = asian_directory
-                        elif label == "Black":directory = black_directory
-                        elif label == "White" or label == "Middle Eastern":directory = white_directory
-                        elif label == "Hispanic":directory = hispanic_directory
-                        else:directory = other
+                        if label == "Asian" or label == "Indian": directory = asian_directory
+                        elif label == "Black": directory = black_directory
+                        elif label == "White" or label == "Middle Eastern": directory = white_directory
+                        elif label == "Hispanic": directory = hispanic_directory
+                        else: directory = other
                         speech = random.choice(directory)
-                        while speech == speech_copy and len(directory)!=1:
-                            speech = random.choice(directory)
+                        while speech == speech_copy and len(directory)!=1:speech = random.choice(directory)
                         speech_copy = speech
                         wf = wave.open(speech,'rb')
                         stream = p.open(format = p.get_format_from_width(wf.getsampwidth()),
@@ -186,13 +185,12 @@ while(True):
                             else:
                                 t.bgpic('elmo_face/elmo2.png')
                                 t.update()
-    cv2.imshow('img',img)
-    
+    cv2.imshow('cumlord',img)
+
     if cv2.waitKey(1) & 0xFF == 27: #press esc to quit
         break
 
 cap.release()
 cv2.destroyAllWindows()
 t.bye()
-stream.close()
 p.terminate()
