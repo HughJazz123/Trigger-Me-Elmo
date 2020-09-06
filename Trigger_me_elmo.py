@@ -14,12 +14,12 @@ import pyaudio
 import wave
 import audioop
 from collections import Counter
-#-----------------------
+#-----------------------  wow that is a shit ton of modules
 face_cascade = cv2.CascadeClassifier('haarcascade_frontalface_default.xml')
 
 #audio stuff
 chunk = 1024
-p=pyaudio.PyAudio()
+p = pyaudio.PyAudio()
 
 #loading models
 def loadVggFaceModel():
@@ -100,21 +100,22 @@ t.setup(width=1.0,height=1.0)
 t.bgpic('elmo_face/elmo2.png')
 t.update()
 
+# file directories
 asian_directory = glob.glob('Sound/Asian/*.wav')
 black_directory = glob.glob('Sound/Black/*.wav')
 hispanic_directory = glob.glob("Sound/Hispanic/*.wav")
 white_directory = glob.glob('Sound/White/*.wav')
 other = glob.glob("Sound/Other/*.wav")
-speech_copy = ''
-race_count = []
 
-while 1:
+speech_copy = ''  #to recognize what the previous speech was
+race_count = []  #to get the average race predicted in 10 frames
+
+while 1:  #endless loop
     ret, img = cap.read()
-    img = cv2.resize(img, (int(640*0.75), int(360*0.75)))
+    img = cv2.resize(img, (int(640*0.75), int(360*0.75)))  #set frame size
     faces = face_cascade.detectMultiScale(img, 1.3, 5)
 
-    for (x,y,w,h) in faces:
-
+    for (x,y,w,h) in faces:  #coordinates of the faces
         cv2.rectangle(img,(x,y),(x+w,y+h),(0,255,0),1)
         detected_face = img[int(y):int(y+h), int(x):int(x+w)] #crop detected face
         margin_rate = 30
@@ -137,71 +138,78 @@ while 1:
                 
             prediction_proba = race_model.predict(img_pixels)
             prediction = np.argmax(prediction_proba)
-                
+
             race = races[prediction]
             #--------------------------
 
             overlay = img.copy()
-            proba = round(100*prediction_proba[0, prediction], 2)
 
-            if True:
-                label = str(race)
-                if len(race_count) < 10:
-                    race_count.append(label)
+            label = str(race)
+            if len(race_count) < 10:
+                race_count.append(label)
 
-                elif len(race_count) == 10:
-                    race_count.append(label)
-                    race_mode = Counter(race_count).most_common(1)[0][0]
-                    cv2.putText(img,race_mode , (x+w//2-10,y), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255,255,255), 1)
-                    cv2.rectangle(img,(0,0),(180,80),(64,64,64),cv2.FILLED)
-                    cv2.addWeighted(overlay, 0.4, img, 1 - 0.4, 0, img)
+            elif len(race_count) == 10:
+                race_count.append(label)
+                race_mode = Counter(race_count).most_common(1)[0][0]
+                cv2.putText(img,race_mode , (x+w//2-10,y), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255,255,255), 1)
+                cv2.rectangle(img,(0,0),(180,80),(64,64,64),cv2.FILLED)
+                cv2.addWeighted(overlay, 0.4, img, 1 - 0.4, 0, img)
+                prediction_list = []
+                for i in range(len(races)):
+                    prediction_string= (races[i] + " : " + str(round(prediction_proba[0][i],6)))
+                    if np.argmax(prediction_proba) == i:
+                        prediction_string=("*"+prediction_string)
+                    prediction_list.append(prediction_string)
+            
+                for i in range(len(prediction_list)):
+                    cv2.putText(img,prediction_list[i],(0,i*13+10),cv2.FONT_HERSHEY_SIMPLEX, 0.4,(255,255,255), 1)
 
-                    for i in range(len(races)):
-                        prediction_string= (races[i]+" : "+str(round(prediction_proba[0][i],6)))
-                        if np.argmax(prediction_proba) == i:
-                            prediction_string=("*"+prediction_string)
+            else:
 
-                        cv2.putText(img,prediction_string,(0,i*13+10),cv2.FONT_HERSHEY_SIMPLEX, 0.4,(255,255,255), 1)
+                cv2.putText(img,race_mode , (x+w//2-10,y), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255,255,255), 1)
+                cv2.rectangle(img,(0,0),(180,80),(64,64,64),cv2.FILLED)
+                cv2.addWeighted(overlay, 0.4, img, 1 - 0.4, 0, img)
 
-                else:
-                    race_mode = Counter(race_count).most_common(1)[0][0]
-                    race_count = []
-                    if race_mode == "Asian" or race_mode == "Indian": 
-                        directory = asian_directory
-                    elif race_mode == "Black": 
-                        directory = black_directory
-                    elif race_mode == "White" or race_mode == "Middle Eastern": 
-                        directory = white_directory
-                    elif race_mode == "Hispanic": 
-                        directory = hispanic_directory
-                    else: 
-                        directory = other
+                for i in range(len(prediction_list)):
+                    cv2.putText(img,prediction_list[i],(0,i*13+10),cv2.FONT_HERSHEY_SIMPLEX, 0.4,(255,255,255), 1)
+                race_mode = Counter(race_count).most_common(1)[0][0]
+                race_count = []
+                if race_mode == "Asian" or race_mode == "Indian": 
+                    directory = asian_directory
+                elif race_mode == "Black": 
+                    directory = black_directory
+                elif race_mode == "White" or race_mode == "Middle Eastern": 
+                    directory = white_directory
+                elif race_mode == "Hispanic": 
+                    directory = hispanic_directory
+                else: 
+                    directory = other
 
+                speech = random.choice(directory)
+
+                while speech == speech_copy and len(directory)!=1:
                     speech = random.choice(directory)
 
-                    while speech == speech_copy and len(directory)!=1:
-                        speech = random.choice(directory)
+                speech_copy = speech
+                wf = wave.open(speech,'rb')
+                stream = p.open(format = p.get_format_from_width(wf.getsampwidth()),
+                                channels = wf.getnchannels(),
+                                rate = wf.getframerate(),
+                                output = True)
+                data = wf.readframes(chunk)
 
-                    speech_copy = speech
-                    wf = wave.open(speech,'rb')
-                    stream = p.open(format = p.get_format_from_width(wf.getsampwidth()),
-                                    channels = wf.getnchannels(),
-                                    rate = wf.getframerate(),
-                                    output = True)
+                while data != b'':
+                    stream.write(data)
                     data = wf.readframes(chunk)
-    
-                    while data != b'':
-                        stream.write(data)
-                        data = wf.readframes(chunk)
-                        rms= audioop.rms(data,2)
+                    rms= audioop.rms(data,2)
 
-                        if rms>500:
-                            t.bgpic('elmo_face/elmo.png')
-                            t.update()
+                    if rms>500:
+                        t.bgpic('elmo_face/elmo.png')
+                        t.update()
 
-                        else:
-                            t.bgpic('elmo_face/elmo2.png')
-                            t.update()
+                    else:
+                        t.bgpic('elmo_face/elmo2.png')
+                        t.update()
     cv2.imshow('cumlord',img)
 
     if cv2.waitKey(1) & 0xFF == 27: #press esc to quit
@@ -211,4 +219,3 @@ cap.release()
 cv2.destroyAllWindows()
 t.bye()
 p.terminate()
-
